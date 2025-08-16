@@ -1,5 +1,5 @@
 import numpy as np
-from src.utils.math import solve_least_squares_with_knowns
+from src.utils import solve_least_squares_with_knowns
 
 
 class MosaicResolver:
@@ -108,16 +108,10 @@ class MosaicResolver:
         self.known_values_R = np.array(self.known_values_R)
         self.known_values_G = np.array(self.known_values_G)
         self.known_values_B = np.array(self.known_values_B)
-        x_R, residuals_R = solve_least_squares_with_knowns(self.system_A, self.system_b_R, self.known_index, self.known_values_R)
-        x_G, residuals_G = solve_least_squares_with_knowns(self.system_A, self.system_b_G, self.known_index, self.known_values_G)
-        x_B, residuals_B = solve_least_squares_with_knowns(self.system_A, self.system_b_B, self.known_index, self.known_values_B)
-        self.x_R = x_R
-        self.x_G = x_G
-        self.x_B = x_B
-        print("residuals in red channel:", residuals_R)
-        print("residuals in green channel:", residuals_G)
-        print("residuals in blue channel:", residuals_B)
-
+        self.x_R, _ = solve_least_squares_with_knowns(self.system_A, self.system_b_R, self.known_index, self.known_values_R)
+        self.x_G, _ = solve_least_squares_with_knowns(self.system_A, self.system_b_G, self.known_index, self.known_values_G)
+        self.x_B, _ = solve_least_squares_with_knowns(self.system_A, self.system_b_B, self.known_index, self.known_values_B)
+        
     def _fill_resolved_pixels(self):
         width, height = len(self.resolved_img[0]), len(self.resolved_img)
         
