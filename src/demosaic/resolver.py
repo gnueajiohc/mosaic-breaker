@@ -26,6 +26,7 @@ class MosaicResolver:
         self.known_mask = np.zeros_like(self.resolved_img, dtype=bool)
         for info in self.registry:
             self._find_known_pixels_from_info(info)
+        self.intermediate_img = self.resolved_img.copy()
             
     def _find_known_pixels_from_info(self, info):
         img = info.mosaiced_img
@@ -72,7 +73,6 @@ class MosaicResolver:
     def _build_system_from_block(self, top_y, left_x, kernel_size, value):
         area = kernel_size * kernel_size
         system_indices = []
-        R, G, B = value
         for y in range(top_y, top_y + kernel_size):
             for x in range(left_x, left_x + kernel_size):
                 if (y, x) not in self.pixel_index_to_system_index:
@@ -83,10 +83,11 @@ class MosaicResolver:
                 if self.known_mask[y][x] and system_index not in self.known_index_set:
                     self.known_index.append(system_index)
                     self.known_index_set.add(system_index)
-                    self.known_values_R.append(R)
-                    self.known_values_G.append(G)
-                    self.known_values_B.append(B)
-                    
+                    self.known_values_R.append(self.resolved_img[y][x][0])
+                    self.known_values_G.append(self.resolved_img[y][x][1])
+                    self.known_values_B.append(self.resolved_img[y][x][2])
+        
+        R, G, B = value
         self.system_A.append(system_indices)
         self.system_b_R.append(R * area)
         self.system_b_G.append(G * area)
@@ -103,12 +104,19 @@ class MosaicResolver:
         self.system_A = system_A
     
     def _solve_system(self):
+        self.known_index = np.array(self.known_index)
+        self.known_values_R = np.array(self.known_values_R)
+        self.known_values_G = np.array(self.known_values_G)
+        self.known_values_B = np.array(self.known_values_B)
         x_R, residuals_R = solve_least_squares_with_knowns(self.system_A, self.system_b_R, self.known_index, self.known_values_R)
         x_G, residuals_G = solve_least_squares_with_knowns(self.system_A, self.system_b_G, self.known_index, self.known_values_G)
         x_B, residuals_B = solve_least_squares_with_knowns(self.system_A, self.system_b_B, self.known_index, self.known_values_B)
         self.x_R = x_R
         self.x_G = x_G
         self.x_B = x_B
+        print("residuals in red channel:", residuals_R)
+        print("residuals in green channel:", residuals_G)
+        print("residuals in blue channel:", residuals_B)
 
     def _fill_resolved_pixels(self):
         width, height = len(self.resolved_img[0]), len(self.resolved_img)
